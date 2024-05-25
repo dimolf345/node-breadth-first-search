@@ -2,10 +2,18 @@
   "name": "ai-breadth-first-search",
   "version": "1.0.0",
   "description": "A simple project to show how BFS algo works",
-  "main": "main.ts",
+  "main": "./src/main.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "ts-node-dev --respawn --transpile-only src/main.ts",
+    "build": "tsc",
+    "start": "npm run build && node dist/main.js"
   },
   "author": "Luca Di Molfetta",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.4.5"
+  }
 }
