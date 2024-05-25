@@ -1,0 +1,11 @@
+{
+  "name": "ai-breadth-first-search",
+  "version": "1.0.0",
+  "description": "A simple project to show how BFS algo works",
+  "main": "main.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Luca Di Molfetta",
+  "license": "ISC"
+}
