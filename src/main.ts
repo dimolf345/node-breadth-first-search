@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import csv from "csv-parser";
-import readline from "readline";
+import readline, { ReadLineOptions } from "readline";
 
 import {
   DataSet,
@@ -12,6 +12,28 @@ import {
   Star,
 } from "./models/data.model";
 
+const terminal = (config?: {
+  withCompleter: boolean;
+  dataSource: Map<string, Person>;
+}) => {
+  const readlineconfig: ReadLineOptions = {
+    input: process.stdin,
+    output: process.stdout,
+    terminal: true,
+  };
+
+  if (config?.withCompleter) {
+    readlineconfig.completer = (search: string) => {
+      const names = [...config.dataSource.values()].map(({ name }) => name);
+      const hits = names.filter((name) =>
+        name.toLocaleLowerCase().includes(search.toLocaleLowerCase())
+      );
+      return [hits.length ? hits : names, search];
+    };
+  }
+  return readline.createInterface(readlineconfig);
+};
+
 /**
  * Asks the user which dataset to use (small or large dataset).
  * In case of input not allowed, small dataset is loaded.
@@ -19,10 +41,7 @@ import {
  */
 function askForDataSetSize() {
   let result: DataSize = "small";
-  const prompt = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
+  const prompt = terminal();
 
   return new Promise<DataSize>((resolve, _) => {
     prompt.question(
@@ -93,37 +112,38 @@ async function loadData(dataSet: DataSize): Promise<DataSet | undefined> {
 function askForSearchInfo(size: DataSize, data: Map<string, Person>) {
   let start: Person | undefined;
   let goal: Person | undefined;
+  let queryText: string;
 
-  const prompt = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: true,
-    completer: (search: string) => {
-      const names = [...data.values()].map(({ name }) => name);
-      const hits = names.filter((name) =>
-        name.toLocaleLowerCase().includes(search.toLocaleLowerCase())
-      );
-      return [hits.length ? hits : names, search];
-    },
-  });
+  let prompt = terminal({ withCompleter: true, dataSource: data });
 
   let startOrFinish: "start" | "finish" = "start";
-  let query = `Write name and surname of the actor you want to ${startOrFinish} with.\n`;
+  const query = () =>
+    `Write name and surname of the actor you want to ${startOrFinish} with.\n`;
+
   if (size == "small") {
     const optionsString = [...data.values()].reduce(
       (acc, curr) => (acc += curr.name + "\n"),
       "\nOptions available are: \n"
     );
-    query = query + "\n" + optionsString;
+    queryText = query() + "\n" + optionsString;
   }
-  prompt.question(query, (answer) => {
-    start = data.get(answer);
-    startOrFinish = "finish";
-    console.log(start);
-  });
 
-  prompt.question(query, (answer) => {
-    goal = data.get(answer);
+  return new Promise<{ start: Person; goal: Person }>((resolve, _) => {
+    prompt.question(queryText, (answer) => {
+      start = data.get(answer);
+      startOrFinish = "finish";
+      prompt.close();
+
+      queryText = "\n" + query();
+      prompt = terminal({ withCompleter: true, dataSource: data });
+      prompt.question(queryText, (answer) => {
+        goal = data.get(answer)!;
+        if (start && goal) {
+          prompt.close();
+          resolve({ start, goal });
+        }
+      });
+    });
   });
 }
 
@@ -134,10 +154,11 @@ async function main() {
 
   if (!dataset) {
     throw new Error("Something went wrong when loading the data");
-  } else {
-    const { people, movies, stars } = dataset;
-    askForSearchInfo(dataSetSize, people);
   }
+
+  const { people, movies, stars } = dataset;
+  const { start, goal } = await askForSearchInfo(dataSetSize, people);
+  return;
 }
 
 main();
