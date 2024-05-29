@@ -2,7 +2,7 @@ export type DataSize = "small" | "large";
 
 export type FileName = "people" | "movies" | "stars";
 
-export type Person = {
+export type Actor = {
   id: string;
   name: string;
   birth: string;
@@ -20,7 +20,7 @@ export type Star = {
 };
 
 export type DataSet = {
-  people: Map<string, Person>;
+  actors: Map<string, Actor>;
   movies: Map<string, Movie>;
   stars: Map<string, Star>;
 };

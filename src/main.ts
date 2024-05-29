@@ -8,13 +8,14 @@ import {
   DataSize,
   FileName,
   Movie,
-  Person,
+  Actor,
   Star,
 } from "./models/data.model";
+import { rejects } from "assert";
 
 const terminal = (config?: {
   withCompleter: boolean;
-  dataSource: Map<string, Person>;
+  dataSource: Map<string, Actor>;
 }) => {
   const readlineconfig: ReadLineOptions = {
     input: process.stdin,
@@ -52,7 +53,7 @@ function askForDataSetSize() {
             console.log("Loading the small dataset");
             break;
           case "1":
-            console.log("Loading the large dataset");
+            console.log("Loading the large dataset. This could take a while");
             result = "large";
             break;
           default:
@@ -96,11 +97,11 @@ function parseCsv<T extends Object>(
 
 async function loadData(dataSet: DataSize): Promise<DataSet | undefined> {
   try {
-    const people = await parseCsv<Person>(dataSet, "people", "name");
+    const actors = await parseCsv<Actor>(dataSet, "people", "name");
     const movies = await parseCsv<Movie>(dataSet, "movies", "id");
     const stars = await parseCsv<Star>(dataSet, "stars", "personId");
     return {
-      people,
+      actors,
       movies,
       stars,
     };
@@ -109,9 +110,9 @@ async function loadData(dataSet: DataSize): Promise<DataSet | undefined> {
   }
 }
 
-function askForSearchInfo(size: DataSize, data: Map<string, Person>) {
-  let start: Person | undefined;
-  let goal: Person | undefined;
+function askForSearchInfo(size: DataSize, data: Map<string, Actor>) {
+  let start: Actor | undefined;
+  let goal: Actor | undefined;
   let queryText: string;
 
   let prompt = terminal({ withCompleter: true, dataSource: data });
@@ -126,11 +127,18 @@ function askForSearchInfo(size: DataSize, data: Map<string, Person>) {
       "\nOptions available are: \n"
     );
     queryText = query() + "\n" + optionsString;
+  } else {
+    queryText = query();
   }
 
-  return new Promise<{ start: Person; goal: Person }>((resolve, _) => {
+  return new Promise<{ start: Actor; goal: Actor }>((resolve, reject) => {
     prompt.question(queryText, (answer) => {
       start = data.get(answer);
+
+      if (!start) {
+        console.log(`No actors found with name ${answer}. Try again`);
+      }
+
       startOrFinish = "finish";
       prompt.close();
 
@@ -141,6 +149,8 @@ function askForSearchInfo(size: DataSize, data: Map<string, Person>) {
         if (start && goal) {
           prompt.close();
           resolve({ start, goal });
+        } else {
+          reject("Something went wrong during actor selection. Try again");
         }
       });
     });
@@ -156,9 +166,9 @@ async function main() {
     throw new Error("Something went wrong when loading the data");
   }
 
-  const { people, movies, stars } = dataset;
-  const { start, goal } = await askForSearchInfo(dataSetSize, people);
-  return;
+  const { actors, movies, stars } = dataset;
+
+  const { start, goal } = await askForSearchInfo(dataSetSize, actors);
 }
 
 main();
