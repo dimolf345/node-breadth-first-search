@@ -22,5 +22,5 @@ export type Star = {
 export type DataSet = {
   actors: Map<string, Actor>;
   movies: Map<string, Movie>;
-  stars: Map<string, Star>;
+  stars: Set<Star>;
 };

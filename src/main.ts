@@ -11,7 +11,6 @@ import {
   Actor,
   Star,
 } from "./models/data.model";
-import { rejects } from "assert";
 
 const terminal = (config?: {
   withCompleter: boolean;
@@ -75,19 +74,23 @@ function askForDataSetSize() {
 function parseCsv<T extends Object>(
   size: DataSize,
   name: FileName,
-  idKey: keyof T
+  idKey?: keyof T
 ) {
-  const result = new Map<string, T>();
+  const result = idKey ? new Map<string, T>() : new Set<T>();
   const filePath = path.resolve(__dirname, size, `${name}.csv`);
 
-  return new Promise<Map<string, T>>((resolve, reject) => {
+  return new Promise<Map<string, T> | Set<T>>((resolve, reject) => {
     fs.createReadStream(filePath)
       .pipe(csv())
       .on("data", (data: T) => {
-        if (!Object.hasOwn(data, idKey)) {
-          throw new Error(`${String(idKey)} not found in  ${data}`);
+        if (idKey) {
+          if (!Object.hasOwn(data, idKey)) {
+            throw new Error(`${String(idKey)} not found in  ${data}`);
+          } else {
+            (result as Map<string, T>).set(data[idKey] as string, data);
+          }
         } else {
-          result.set(data[idKey] as string, data);
+          (result as Set<T>).add(data);
         }
       })
       .on("end", () => resolve(result))
@@ -97,9 +100,15 @@ function parseCsv<T extends Object>(
 
 async function loadData(dataSet: DataSize): Promise<DataSet | undefined> {
   try {
-    const actors = await parseCsv<Actor>(dataSet, "people", "name");
-    const movies = await parseCsv<Movie>(dataSet, "movies", "id");
-    const stars = await parseCsv<Star>(dataSet, "stars", "personId");
+    const actors = (await parseCsv<Actor>(dataSet, "people", "name")) as Map<
+      string,
+      Actor
+    >;
+    const movies = (await parseCsv<Movie>(dataSet, "movies", "id")) as Map<
+      string,
+      Movie
+    >;
+    const stars = (await parseCsv<Star>(dataSet, "stars")) as Set<Star>;
     return {
       actors,
       movies,
