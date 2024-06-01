@@ -1,10 +1,12 @@
 import { INode } from "./node.model";
 
-export interface IFrontier {
-  frontier: INode<unknown, unknown>[];
+export interface IFrontier<Node extends INode<any, any>> {
+  frontier: Node[];
   isEmpty: boolean;
 
-  add: (node: INode<unknown, unknown>) => void;
+  isNodeInFrontier(node: Node, comparisonKey: keyof Node["state"]): boolean;
 
-  removeNode: () => INode<unknown, unknown> | undefined;
+  addNode(node: Node): void;
+
+  removeNode(): Node | undefined;
 }

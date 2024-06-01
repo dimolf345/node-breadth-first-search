@@ -5,7 +5,7 @@ import { INode } from "./node.model";
 export interface IBFS<T, N extends INode<unknown, unknown>> {
   start: T;
   goal: T;
-  search: IFrontier;
+  search: IFrontier<N>;
   dataSet: DataSet;
 
   currentNode: N | undefined;

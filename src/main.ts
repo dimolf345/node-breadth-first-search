@@ -11,6 +11,7 @@ import {
   Actor,
   Star,
 } from "./models/data.model";
+import { ActorNode, BFS } from "./classes";
 
 const terminal = (config?: {
   withCompleter: boolean;
@@ -100,7 +101,7 @@ function parseCsv<T extends Object>(
 
 async function loadData(dataSet: DataSize): Promise<DataSet | undefined> {
   try {
-    const actors = (await parseCsv<Actor>(dataSet, "people", "name")) as Map<
+    const actors = (await parseCsv<Actor>(dataSet, "people", "id")) as Map<
       string,
       Actor
     >;
@@ -135,14 +136,14 @@ function askForSearchInfo(size: DataSize, data: Map<string, Actor>) {
       (acc, curr) => (acc += curr.name + "\n"),
       "\nOptions available are: \n"
     );
-    queryText = query() + "\n" + optionsString;
+    queryText = query() + "\n" + optionsString + "\n";
   } else {
     queryText = query();
   }
 
   return new Promise<{ start: Actor; goal: Actor }>((resolve, reject) => {
     prompt.question(queryText, (answer) => {
-      start = data.get(answer);
+      start = [...data.values()].find(({ name }) => name === answer)!;
 
       if (!start) {
         console.log(`No actors found with name ${answer}. Try again`);
@@ -154,7 +155,7 @@ function askForSearchInfo(size: DataSize, data: Map<string, Actor>) {
       queryText = "\n" + query();
       prompt = terminal({ withCompleter: true, dataSource: data });
       prompt.question(queryText, (answer) => {
-        goal = data.get(answer)!;
+        goal = [...data.values()].find(({ name }) => name === answer)!;
         if (start && goal) {
           prompt.close();
           resolve({ start, goal });
@@ -164,6 +165,25 @@ function askForSearchInfo(size: DataSize, data: Map<string, Actor>) {
       });
     });
   });
+}
+
+function createSolutionString(solution: ActorNode[]) {
+  let resultString = "";
+  const degrees = solution.length;
+  let degressLeft = degrees - 1;
+  for (const item of solution) {
+    if (item.parent) {
+      const degreeString = `\n${degressLeft}: ${item.parent.state.name} and ${item.state.name} starred in ${item.action?.title}`;
+
+      resultString = degreeString.concat(resultString);
+    } else {
+      resultString = `\n${degrees - 1} degree/s of separation.`.concat(
+        resultString
+      );
+    }
+    degressLeft--;
+  }
+  return resultString;
 }
 
 async function main() {
@@ -178,6 +198,31 @@ async function main() {
   const { actors, movies, stars } = dataset;
 
   const { start, goal } = await askForSearchInfo(dataSetSize, actors);
+
+  const lowerLimit = Math.max(+start.birth, +goal.birth);
+
+  for (const star of stars) {
+    const { movieId } = star;
+    const movie = movies.get(movieId);
+    const movieYear = Number(movie?.year);
+    if (movieYear <= lowerLimit) {
+      stars.delete(star);
+    }
+  }
+
+  const bfs = new BFS(start, goal, dataset);
+
+  try {
+    const solution = await bfs.startSearch();
+    if (solution.length) {
+      console.log(createSolutionString(solution));
+    } else {
+      console.log("There is no link with the two actors!");
+    }
+  } catch (err) {
+    console.log(err);
+    process.exit(1);
+  }
 }
 
 main();

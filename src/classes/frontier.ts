@@ -1,21 +1,33 @@
 import { IFrontier } from "../models/frontier.model";
 import { INode } from "../models/node.model";
+import { ActorNode } from "./node";
 
-export abstract class Frontier implements IFrontier {
-  frontier: INode<unknown, unknown>[] = [];
+export abstract class Frontier<T extends INode<any, any>>
+  implements IFrontier<T>
+{
+  frontier: T[] = [];
 
-  add(node: INode<unknown, unknown>) {
+  addNode(node: T | undefined) {
+    if (!node) {
+      throw new Error("No node to add!");
+    }
     this.frontier.push(node);
+  }
+
+  isNodeInFrontier(node: T, comparisonKey: keyof T["state"]): boolean {
+    return this.frontier.some(
+      (element) => element.state[comparisonKey] === node.state[comparisonKey]
+    );
   }
 
   get isEmpty() {
     return this.frontier.length === 0;
   }
 
-  abstract removeNode(): INode<unknown, unknown> | undefined;
+  abstract removeNode(): T | undefined;
 }
 
-export class QueueFrontier extends Frontier {
+export class QueueFrontier<T extends INode<any, any>> extends Frontier<T> {
   constructor() {
     super();
   }
@@ -24,6 +36,8 @@ export class QueueFrontier extends Frontier {
     if (this.isEmpty) {
       return;
     }
-    return this.frontier.shift();
+    const [firstNode, ...rest] = this.frontier;
+    this.frontier = rest;
+    return firstNode;
   }
 }
