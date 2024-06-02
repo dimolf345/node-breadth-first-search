@@ -1,6 +1,5 @@
 import { IFrontier } from "../models/frontier.model";
 import { INode } from "../models/node.model";
-import { ActorNode } from "./node";
 
 export abstract class Frontier<T extends INode<any, any>>
   implements IFrontier<T>

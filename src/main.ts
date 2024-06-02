@@ -12,6 +12,7 @@ import {
   Star,
 } from "./models/data.model";
 import { ActorNode, BFS } from "./classes";
+import { askQuestion } from "./utils/askQuestion";
 
 const terminal = (config?: {
   withCompleter: boolean;
@@ -69,8 +70,8 @@ function askForDataSetSize() {
 }
 
 /**
- * Reads the data from csv files and returns a Map containing the mapped
- * csv file
+ * Reads the data from csv files and returns a Map or a Set containing
+ * the parsed data from csv file
  */
 function parseCsv<T extends Object>(
   size: DataSize,
@@ -99,6 +100,11 @@ function parseCsv<T extends Object>(
   });
 }
 
+/**
+ * Loads all the data necessary for the BFS
+ * @param dataSet variable use to decide whether to import to small or large dataset
+ * @returns
+ */
 async function loadData(dataSet: DataSize): Promise<DataSet | undefined> {
   try {
     const actors = (await parseCsv<Actor>(dataSet, "people", "id")) as Map<
@@ -120,12 +126,18 @@ async function loadData(dataSet: DataSize): Promise<DataSet | undefined> {
   }
 }
 
-function askForSearchInfo(size: DataSize, data: Map<string, Actor>) {
-  let start: Actor | undefined;
-  let goal: Actor | undefined;
+/**
+ * Asks for which dataSet to choose and which actors to search through
+ * @param size
+ * @param data
+ * @returns
+ */
+async function askForSearchInfo(
+  size: DataSize,
+  data: Map<string, Actor>
+): Promise<Actor[]> {
+  //Composition of query text
   let queryText: string;
-
-  let prompt = terminal({ withCompleter: true, dataSource: data });
 
   let startOrFinish: "start" | "finish" = "start";
   const query = () =>
@@ -140,31 +152,30 @@ function askForSearchInfo(size: DataSize, data: Map<string, Actor>) {
   } else {
     queryText = query();
   }
+  //
 
-  return new Promise<{ start: Actor; goal: Actor }>((resolve, reject) => {
-    prompt.question(queryText, (answer) => {
-      start = [...data.values()].find(({ name }) => name === answer)!;
+  let prompt = () => terminal({ withCompleter: true, dataSource: data });
+  //First actor question
+  const firstQuestion = await askQuestion(
+    prompt(),
+    queryText,
+    (answer: string) => {
+      return [...data.values()].find(({ name }) => name === answer)!;
+    }
+  ).then((result) => result as Actor);
 
-      if (!start) {
-        console.log(`No actors found with name ${answer}. Try again`);
-      }
+  startOrFinish = "finish";
+  queryText = "\n" + query();
+  //Second actor question
+  const secondQuestion = await askQuestion(
+    prompt(),
+    queryText,
+    (answer: string) => {
+      return [...data.values()].find(({ name }) => name === answer)!;
+    }
+  ).then((result) => result as Actor);
 
-      startOrFinish = "finish";
-      prompt.close();
-
-      queryText = "\n" + query();
-      prompt = terminal({ withCompleter: true, dataSource: data });
-      prompt.question(queryText, (answer) => {
-        goal = [...data.values()].find(({ name }) => name === answer)!;
-        if (start && goal) {
-          prompt.close();
-          resolve({ start, goal });
-        } else {
-          reject("Something went wrong during actor selection. Try again");
-        }
-      });
-    });
-  });
+  return Promise.all([firstQuestion, secondQuestion]);
 }
 
 function createSolutionString(solution: ActorNode[]) {
@@ -197,15 +208,15 @@ async function main() {
 
   const { actors, movies, stars } = dataset;
 
-  const { start, goal } = await askForSearchInfo(dataSetSize, actors);
+  const [start, goal] = await askForSearchInfo(dataSetSize, actors);
 
-  const lowerLimit = Math.max(+start.birth, +goal.birth);
+  const youngestActor = Math.max(+start.birth, +goal.birth);
 
   for (const star of stars) {
     const { movieId } = star;
     const movie = movies.get(movieId);
     const movieYear = Number(movie?.year);
-    if (movieYear <= lowerLimit) {
+    if (movieYear <= youngestActor) {
       stars.delete(star);
     }
   }
@@ -217,7 +228,7 @@ async function main() {
     if (solution.length) {
       console.log(createSolutionString(solution));
     } else {
-      console.log("There is no link with the two actors!");
+      console.log("\nThere is no link with the two actors!");
     }
   } catch (err) {
     console.log(err);
