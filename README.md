@@ -1,6 +1,6 @@
 # Beadth First Search Algorithm in Node.js
 
-This project is the solution for the first challenge of the [Harvard CS50 introduction to Artificial Intelligence with Python](https://www.edx.org/learn/artificial-intelligence/harvard-university-cs50-s-introduction-to-artificial-intelligence-with-pythonhttps://www.edx.org/learn/artificial-intelligence/harvard-university-cs50-s-introduction-to-artificial-intelligence-with-python) course, with the only difference that is coded in Typescript/Node.js
+This project is the solution for the first challenge of the [Harvard CS50 introduction to Artificial Intelligence with Python](https://www.edx.org/learn/artificial-intelligence/harvard-university-cs50-s-introduction-to-artificial-intelligence-with-pythonhttps://www.edx.org/learn/artificial-intelligence/harvard-university-cs50-s-introduction-to-artificial-intelligence-with-python) course, with the only difference that it is coded in Typescript/Node.js
 
 ## Purpose of the challenge
 
