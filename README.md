@@ -4,7 +4,7 @@ This project is the solution for the first challenge of the [Harvard CS50 introd
 
 ## Purpose of the challenge
 
-This project is used to play the [Six Degrees of Kevin Bacon game](https://en.wikipedia.org/wiki/Six_Degrees_of_Kevin_Bacon), in which the purpose is to find the connection between two actors by looking at the connection between their starrings.
+This project is used to play the [Six Degrees of Kevin Bacon game](https://en.wikipedia.org/wiki/Six_Degrees_of_Kevin_Bacon), in which the purpose is to find the connection between two actors by looking at the history of their starrings. The app lets the user choose between a small or large dataset. In the second case the search of course will take longer time to eventually find the solution.
 
 ## How to run the project
 
